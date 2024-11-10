@@ -1,0 +1,3 @@
+# cmake/clangd
+build
+.cache

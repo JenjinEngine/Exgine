@@ -1,0 +1,4 @@
+[submodule "vendor/megasource"]
+	path = vendor/megasource
+	url = https://github.com/JenjinEngine/megasource
+	branch = main
