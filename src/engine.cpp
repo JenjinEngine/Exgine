@@ -9,7 +9,7 @@
 using namespace Exgine;
 
 Engine::Engine(GLFWwindow *window) : window(window) {
-  spdlog::trace("Engine::Engine({})", (void*)window);
+  spdlog::trace("Engine::Engine({})", (void *)window);
 
   if (glfwGetCurrentContext() == nullptr) {
     spdlog::critical("Engine::Engine(): No current OpenGL context, exiting.");

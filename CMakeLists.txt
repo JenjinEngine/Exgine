@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 
+message("C Compiler: ${CMAKE_C_COMPILER}")
+message("CXX Compiler: ${CMAKE_CXX_COMPILER}")
+
 # Build type
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -31,6 +34,7 @@ target_include_directories(Exgine
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/glm/
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/imgui/
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/imgui/backends/
+				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/imgui/misc/cpp/
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/stb/
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/lua/include/
 				${CMAKE_SOURCE_DIR}/vendor/megasource/libs/sol2/include/

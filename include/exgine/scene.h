@@ -43,6 +43,22 @@ public:
     return gameObjects;
   }
 
+  struct GameObjectPair {
+    std::string name;
+    std::shared_ptr<GameObject> obj;
+  };
+
+  std::vector<GameObjectPair> GetGameObjectsPair() {
+    std::vector<GameObjectPair> gameObjectsPair;
+    gameObjectsPair.reserve(gameObjects.size());
+
+    for (auto &pair : gameObjects) {
+      gameObjectsPair.emplace_back(GameObjectPair{pair.first, pair.second});
+    }
+
+    return gameObjectsPair;
+  }
+
   std::vector<std::shared_ptr<GameObject>> GetGameObjectsVector() {
     std::vector<std::shared_ptr<GameObject>> gameObjectsVector;
     gameObjectsVector.reserve(

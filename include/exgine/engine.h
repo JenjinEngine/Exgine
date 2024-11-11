@@ -4,8 +4,8 @@
 #define GLFW_INCLUDE_NONE
 
 #include "exgine/lualoader.h"
-#include "exgine/scene.h"
 #include "exgine/renderer.h"
+#include "exgine/scene.h"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -36,6 +36,7 @@ public:
   Exgine::LuaLoader *luaLoader;
 
   std::shared_ptr<Scene> scene = nullptr;
+
 private:
   // OpenGL context.
   GLFWwindow *window;

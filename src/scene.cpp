@@ -4,9 +4,7 @@
 
 using namespace Exgine;
 
-Scene::Scene() {
-  spdlog::trace("Scene::Scene()");
-}
+Scene::Scene() { spdlog::trace("Scene::Scene()"); }
 
 void Scene::AddGameObject(const std::string &name,
                           std::shared_ptr<GameObject> gameObject) {
@@ -43,6 +41,4 @@ void Scene::RemoveGameObject(std::shared_ptr<GameObject> gameObject) {
   }
 }
 
-Scene::~Scene() {
-  spdlog::trace("Scene::~Scene()");
-}
+Scene::~Scene() { spdlog::trace("Scene::~Scene()"); }

@@ -1,3 +1,6 @@
 # cmake/clangd
 build
 .cache
+
+# imgui state
+imgui.ini

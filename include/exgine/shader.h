@@ -8,7 +8,6 @@
 
 #include <string>
 
-// TODO: Add model, view, and projection matrices.
 const std::string vertexShaderSource = R"(
 #version 460 core
 

@@ -99,8 +99,10 @@ int main(int argc, char *argv[]) {
     glClear(GL_COLOR_BUFFER_BIT);
 
     /*if (glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS)*/
-    // TEMP: Debugging, reload all scripts constantly (there isn't enough of a performance hit
-    // to warrant a more complex solution) (200-300µs, 16ms = 16000µs, this means reloading is 1.25% of the frame time, which is acceptable for demo)
+    // TEMP: Debugging, reload all scripts constantly (there isn't enough of a
+    // performance hit to warrant a more complex solution) (200-300µs, 16ms =
+    // 16000µs, this means reloading is 1.25% of the frame time, which is
+    // acceptable for demo)
     engine.luaLoader->ReloadDirectories();
 
     engine.luaLoader->Update();
@@ -110,7 +112,14 @@ int main(int argc, char *argv[]) {
     ImGui::NewFrame();
 
     engine.Draw();
-    engine.luaLoader->Draw();
+
+    try {
+      engine.luaLoader->Draw();
+    } catch (const std::exception &e) {
+      spdlog::error("Exception in Lua: {}", e.what());
+      engine.Cleanup();
+      throw;
+    }
 
     auto fps_text = fmt::format("FPS: {:.3}", ImGui::GetIO().Framerate);
 
@@ -157,11 +166,6 @@ int main(int argc, char *argv[]) {
 
       ImGui::EndTable();
     }
-
-    /*ImGui::Text(fps_text.c_str());*/
-    /*ImGui::Text(fps_avg_text.c_str());*/
-    /*ImGui::Text(dt_text.c_str());*/
-    /*ImGui::Text(dt_avg_text.c_str());*/
 
     ImGui::End();
 

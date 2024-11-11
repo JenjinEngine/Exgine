@@ -5,9 +5,13 @@
 
 #include <glm/glm.hpp>
 #include <sol/raii.hpp>
+#include <sol2_ImGui_Bindings/sol_ImGui.h>
 #include <spdlog/fmt/bundled/color.h>
 #include <spdlog/fmt/bundled/format.h>
 #include <spdlog/spdlog.h>
+
+#include <imgui.h>
+#include <imgui_internal.h>
 
 #include <filesystem>
 #include <sstream>
@@ -22,6 +26,22 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   // base, table, string, math
   this->lua.open_libraries(sol::lib::base, sol::lib::table, sol::lib::string,
                            sol::lib::math);
+
+  sol_ImGui::Init(this->lua);
+
+  auto igt = this->lua["ImGui"];
+
+  igt["ShowDemoWindow"] = &ImGui::ShowDemoWindow;
+
+  igt["GetMainViewport"] = &ImGui::GetMainViewport;
+  igt["SetNextWindowViewport"] = &ImGui::SetNextWindowViewport;
+  igt["DockBuilderRemoveNode"] = &ImGui::DockBuilderRemoveNode;
+  igt["DockBuilderAddNode"] = &ImGui::DockBuilderAddNode;
+  igt["DockBuilderSplitNode"] = &ImGui::DockBuilderSplitNode;
+  igt["DockBuilderDockWindow"] = &ImGui::DockBuilderDockWindow;
+  igt["DockBuilderFinish"] = &ImGui::DockBuilderFinish;
+
+  igt["GetIO"] = &ImGui::GetIO;
 
   // Disable GC (PERF: Fix this later)
   this->lua.change_gc_mode_generational(0, 0);
@@ -96,7 +116,8 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
                     static_cast<void (Scene::*)(std::shared_ptr<GameObject>)>(
                         &Scene::RemoveGameObject)),
       "GetGameObject", &Scene::GetGameObject, "GetGameObjects",
-      &Scene::GetGameObjectsVector,
+      &Scene::GetGameObjectsVector, "GetGameObjectsPair",
+      &Scene::GetGameObjectsPair,
 
       sol::meta_function::index, [](Scene &scene, const std::string &key) {
         return scene.GetGameObject(key);
@@ -114,6 +135,10 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
       "Rotate", &GameObject::Rotate, "GetPosition", &GameObject::GetPosition,
       "GetScale", &GameObject::GetScale, "GetRotation",
       &GameObject::GetRotation, "GetColour", &GameObject::GetColour);
+
+  lua.new_usertype<Scene::GameObjectPair>("GameObjectPair", sol::no_constructor,
+                                          "name", &Scene::GameObjectPair::name,
+                                          "obj", &Scene::GameObjectPair::obj);
 
   lua.new_usertype<glm::vec2>(
       "vec2", sol::constructors<glm::vec2(), glm::vec2(float, float)>(), "x",

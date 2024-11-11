@@ -20,7 +20,7 @@ class Engine;
 
 class LuaLoader {
 public:
-  LuaLoader(Engine* engine);
+  LuaLoader(Engine *engine);
 
   // Execute a script once, no management but bindings are still available.
   void OneShot(const std::string &script);
@@ -31,7 +31,8 @@ public:
   // Loads a directory of scripts into the engine, bindings are fully available.
   void LoadDirectory(const std::string &directory);
 
-  // Reloads all loaded directories. (NOTE: Unloads all scripts first, individual files won't be reloaded)
+  // Reloads all loaded directories. (NOTE: Unloads all scripts first,
+  // individual files won't be reloaded)
   void ReloadDirectories();
 
   // Runs the ready function on every enabled lua script.
