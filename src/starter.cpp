@@ -82,7 +82,9 @@ int main(int argc, char *argv[]) {
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
-  (void)io;
+
+  io.ConfigErrorRecoveryEnableAssert = false;
+  io.ConfigErrorRecoveryEnableTooltip = true;
 
   spdlog::trace("Setup ImGui {}", IMGUI_VERSION);
 

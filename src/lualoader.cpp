@@ -427,14 +427,24 @@ void LuaLoader::Update() {
 }
 
 void LuaLoader::Draw() {
-  for (auto &script : this->scripts) {
-    if (script.enabled && script.draw != sol::nil) {
-      sol::safe_function_result res = script.draw();
-      if (!res.valid()) {
-        sol::error err = res;
-        spdlog::error("LuaLoader::Draw(): {}", err.what());
+  ImGuiErrorRecoveryState state;
+  ImGui::ErrorRecoveryStoreState(&state);
+
+  try {
+    for (auto &script : this->scripts) {
+      if (script.enabled && script.draw != sol::nil) {
+        sol::safe_function_result res = script.draw();
+        if (!res.valid()) {
+          sol::error err = res;
+          spdlog::error("LuaLoader::Draw(): {}", err.what());
+        }
       }
     }
+  } catch (...) {
+    spdlog::error("LuaLoader::Draw(): An error occured, attempting to recover "
+                  "ImGui state.");
+
+    ImGui::ErrorRecoveryTryToRecoverState(&state);
   }
 }
 
