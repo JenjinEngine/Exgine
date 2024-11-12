@@ -1,12 +1,12 @@
--- function update()
--- 	workspace.test:Rotate(5)
---
--- 	gobjs = scene:GetGameObjectsPair()
---
--- 	for i, pair in ipairs(gobjs) do
--- 		print(pair.obj:SetPosition(pair.obj:GetPosition() + vec3.new(0, 0, 0.01)))
--- 	end
--- end
+function update()
+	workspace.test:Rotate(90)
+	--
+	-- 	gobjs = scene:GetGameObjectsPair()
+	--
+	-- 	for i, pair in ipairs(gobjs) do
+	-- 		print(pair.obj:SetPosition(pair.obj:GetPosition() + vec3.new(0, 0, 0.01)))
+	-- 	end
+end
 
 function draw()
 	-- ImGui.SetNextWindowPos(32, 180)

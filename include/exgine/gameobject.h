@@ -5,6 +5,7 @@
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
+#include <imgui.h>
 
 namespace Exgine {
 struct Transform {
@@ -33,10 +34,16 @@ public:
   void SetColour(const glm::vec3 &colour) { this->colour = colour; }
 
   void Translate(const glm::vec3 &translation) {
-    transform.position += translation;
+    transform.position += translation * ImGui::GetIO().DeltaTime;
   }
 
-  void Scale(const glm::vec2 &scale) { transform.scale *= scale; }
-  void Rotate(float rotation) { transform.rotation += rotation; }
+  void Scale(const glm::vec2 &scale) {
+    transform.scale *= scale * ImGui::GetIO().DeltaTime;
+  }
+
+  void Rotate(float rotation) {
+    transform.rotation += rotation * ImGui::GetIO().DeltaTime;
+    transform.rotation = glm::mod(transform.rotation, 360.0f);
+  }
 };
 } // namespace Exgine
