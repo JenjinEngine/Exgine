@@ -3,6 +3,7 @@
 
 #include <exgine/lualoader.h>
 
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <sol/raii.hpp>
 #include <sol2_ImGui_Bindings/sol_ImGui.h>
@@ -99,7 +100,12 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
 
   this->lua.new_usertype<Engine>("Engine", sol::no_constructor, "scene",
                                  &Engine::scene, "s", &Engine::scene,
-                                 "SetScene", &Engine::SetScene);
+                                 "SetScene", &Engine::SetScene, "luaLoader",
+                                 &Engine::luaLoader);
+
+  this->lua.new_usertype<LuaLoader>(
+      "LuaLoader", sol::no_constructor, "ReloadDirectories",
+      &LuaLoader::ReloadDirectories, "Reload", &LuaLoader::ReloadDirectories);
 
   this->lua.new_usertype<Scene>(
       "Scene", sol::factories([]() { return std::make_shared<Scene>(); }),
@@ -334,6 +340,76 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   // Register the engine object
   this->lua.set("engine", this->engine);
   this->lua.set("e", this->engine);
+
+  auto inputTable = this->lua.create_named_table("input");
+  inputTable.set_function("IsKeyDown", [&](const std::string &key) {
+    static std::unordered_map<std::string, int> keys = {};
+
+    if (keys.empty()) {
+      spdlog::info("[LUA] Initializing key map");
+
+      for (int i = 0; i < GLFW_KEY_LAST; i++) {
+        auto keyName = glfwGetKeyName(i, 0);
+        if (keyName) {
+          keys[keyName] = i;
+        }
+      }
+    }
+
+    auto context = glfwGetCurrentContext();
+
+    if (context) {
+      std::string key_lower = key;
+      std::transform(key_lower.begin(), key_lower.end(), key_lower.begin(),
+                     [](unsigned char c) { return std::tolower(c); });
+
+      return glfwGetKey(context, keys[key_lower]) == GLFW_PRESS;
+    } else {
+      spdlog::error("[LUA] No current context while calling `GetKeyDown`");
+      return false;
+    }
+  });
+
+  inputTable.set_function("IsMouseButtonDown", [&](int button) {
+    return glfwGetMouseButton(glfwGetCurrentContext(), button) == GLFW_PRESS;
+  });
+
+  // NOTE: has to get in NDC
+  inputTable.set_function("GetMousePosition", [&]() {
+    double x, y;
+    glfwGetCursorPos(glfwGetCurrentContext(), &x, &y);
+
+    int w, h;
+    glfwGetWindowSize(glfwGetCurrentContext(), &w, &h);
+
+    // Convert to NDC
+    x = (x / w) * 2.0f - 1.0f;
+    y = (y / h) * 2.0f - 1.0f;
+
+    return glm::vec2(x, y);
+  });
+
+  lua.set("LMB", GLFW_MOUSE_BUTTON_LEFT);
+  lua.set("RMB", GLFW_MOUSE_BUTTON_RIGHT);
+  lua.set("MMB", GLFW_MOUSE_BUTTON_MIDDLE);
+
+  auto utilsTable = this->lua.create_named_table("utils");
+  static bool vsync = true; // VSync is enabled by default
+
+  utilsTable.set_function("SetVSync", [&](bool enabled) {
+    glfwSwapInterval(enabled ? 1 : 0);
+    vsync = enabled;
+  });
+
+  utilsTable.set_function("GetVSync", [&]() { return vsync; });
+
+  utilsTable.set_function("ToggleVSync", [&]() {
+    glfwSwapInterval(vsync ? 0 : 1);
+    vsync = !vsync;
+  });
+
+  utilsTable.set_function("ReloadLua", [&]() { this->ReloadDirectories(); });
+  utilsTable.set_function("GetTime", [&]() { return glfwGetTime(); });
 }
 
 void LuaLoader::OneShot(const std::string &script) {
@@ -365,13 +441,18 @@ void LuaLoader::LoadScript(const std::string &script) {
   this->scripts.emplace_back(loadedScript);
 }
 
-void LuaLoader::LoadDirectory(const std::string &directory) {
-  this->loadedDirectories.emplace_back(directory);
+void LuaLoader::LoadDirectory(const std::string &directory, bool saveToList) {
+  if (saveToList)
+    this->loadedDirectories.emplace_back(directory);
 
   try {
     for (const auto &entry : std::filesystem::directory_iterator(directory)) {
       if (entry.is_regular_file()) {
         this->LoadScript(entry.path().string());
+      }
+
+      if (entry.is_directory()) {
+        this->LoadDirectory(entry.path().string(), false);
       }
     }
   } catch (std::filesystem::filesystem_error &e) {
@@ -410,6 +491,10 @@ void LuaLoader::ReloadDirectories() {
 }
 
 void LuaLoader::Update() {
+  auto dt = ImGui::GetIO().DeltaTime;
+  this->lua.set("deltaTime", dt);
+  this->lua.set("dt", dt);
+
   for (auto &script : this->scripts) {
     if (script.enabled && script.update != sol::nil) {
       auto res = script.update();
@@ -441,7 +526,7 @@ void LuaLoader::Draw() {
       }
     }
   } catch (...) {
-    spdlog::error("LuaLoader::Draw(): An error occured, attempting to recover "
+    spdlog::error("LuaLoader::Draw(): An error occurred, attempting to recover "
                   "ImGui state.");
 
     ImGui::ErrorRecoveryTryToRecoverState(&state);

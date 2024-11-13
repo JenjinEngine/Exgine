@@ -29,7 +29,7 @@ public:
   void LoadScript(const std::string &script);
 
   // Loads a directory of scripts into the engine, bindings are fully available.
-  void LoadDirectory(const std::string &directory);
+  void LoadDirectory(const std::string &directory, bool saveToList = true);
 
   // Reloads all loaded directories. (NOTE: Unloads all scripts first,
   // individual files won't be reloaded)

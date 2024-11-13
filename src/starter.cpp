@@ -75,18 +75,17 @@ int main(int argc, char *argv[]) {
   scene->AddGameObject("test", gobj);
   engine.SetScene(scene, true);
 
-  engine.luaLoader->LoadDirectory("demo/scripts");
-  engine.luaLoader->Ready();
-
   // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
 
+  // Disable assertions on recoverable ImGui errors
   io.ConfigErrorRecoveryEnableAssert = false;
   io.ConfigErrorRecoveryEnableTooltip = true;
 
-  spdlog::trace("Setup ImGui {}", IMGUI_VERSION);
+  // Enable docking
+  io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
   // Setup Dear ImGui style
   ImGui::StyleColorsDark();
@@ -95,17 +94,19 @@ int main(int argc, char *argv[]) {
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init("#version 460");
 
+  engine.luaLoader->LoadDirectory("plugins");
+  engine.luaLoader->LoadDirectory("scripts");
+  engine.luaLoader->Ready();
+
+  spdlog::trace("Setup ImGui {}", IMGUI_VERSION);
+
   while (!glfwWindowShouldClose(window) &&
          !glfwGetKey(window, GLFW_KEY_ESCAPE)) {
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    /*if (glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS)*/
-    // TEMP: Debugging, reload all scripts constantly (there isn't enough of a
-    // performance hit to warrant a more complex solution) (200-300µs, 16ms =
-    // 16000µs, this means reloading is 1.25% of the frame time, which is
-    // acceptable for demo)
-    engine.luaLoader->ReloadDirectories();
+    if (glfwGetKey(window, GLFW_KEY_F5) == GLFW_PRESS)
+      engine.luaLoader->ReloadDirectories();
 
     engine.luaLoader->Update();
 
