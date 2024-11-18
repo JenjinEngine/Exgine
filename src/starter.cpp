@@ -116,13 +116,13 @@ int main(int argc, char *argv[]) {
 
     engine.Draw();
 
-    try {
-      engine.luaLoader->Draw();
-    } catch (const std::exception &e) {
-      spdlog::error("Exception in Lua: {}", e.what());
-      engine.Cleanup();
-      throw;
-    }
+    /*try {*/
+    /*  engine.luaLoader->Draw();*/
+    /*} catch (const std::exception &e) {*/
+    /*  spdlog::error("Exception in Lua: {}", e.what());*/
+    /*  engine.Cleanup();*/
+    /*  throw;*/
+    /*}*/
 
     auto fps_text = fmt::format("FPS: {:.3}", ImGui::GetIO().Framerate);
 

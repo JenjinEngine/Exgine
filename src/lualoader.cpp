@@ -42,7 +42,39 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   igt["DockBuilderDockWindow"] = &ImGui::DockBuilderDockWindow;
   igt["DockBuilderFinish"] = &ImGui::DockBuilderFinish;
 
+  igt["ContentRegion"] = &ImGui::GetContentRegionAvail;
+
   igt["GetIO"] = &ImGui::GetIO;
+
+  lua.new_usertype<ImVec2>("ImVec2", sol::constructors<float, float>(), "x",
+                           &ImVec2::x, "y", &ImVec2::y);
+
+  lua.new_usertype<ImVec4>(
+      "ImVec4", sol::constructors<float, float, float, float>(), "x",
+      &ImVec4::x, "y", &ImVec4::y, "z", &ImVec4::z, "w", &ImVec4::w);
+
+  lua.new_usertype<ImGuiIO>(
+      "ImGuiIO", sol::no_constructor, "MousePos", &ImGuiIO::MousePos,
+      "MouseDown", &ImGuiIO::MouseDown, "MouseWheel", &ImGuiIO::MouseWheel,
+      "MouseWheelH", &ImGuiIO::MouseWheelH, "MouseWheel", &ImGuiIO::MouseWheel,
+      "DeltaTime", &ImGuiIO::DeltaTime, "KeyCtrl", &ImGuiIO::KeyCtrl,
+      "KeyShift", &ImGuiIO::KeyShift, "KeyAlt", &ImGuiIO::KeyAlt, "KeySuper",
+      &ImGuiIO::KeySuper, "KeysDown", &ImGuiIO::KeysDown, "NavInputs",
+      &ImGuiIO::NavInputs, "WantCaptureMouse", &ImGuiIO::WantCaptureMouse,
+      "WantCaptureKeyboard", &ImGuiIO::WantCaptureKeyboard, "WantTextInput",
+      &ImGuiIO::WantTextInput, "WantSetMousePos", &ImGuiIO::WantSetMousePos,
+      "WantSaveIniSettings", &ImGuiIO::WantSaveIniSettings, "NavActive",
+      &ImGuiIO::NavActive, "NavVisible", &ImGuiIO::NavVisible, "Framerate",
+      &ImGuiIO::Framerate);
+
+  igt["ImVec2"] = [](float x, float y) { return ImVec2(x, y); };
+  igt["ImVec4"] = [](float x, float y, float z, float w) {
+    return ImVec4(x, y, z, w);
+  };
+
+  igt["Image"] = [](int user_texture_id, const ImVec2 &size) {
+    ImGui::Image((ImTextureID)user_texture_id, size);
+  };
 
   // Disable GC (PERF: Fix this later)
   this->lua.change_gc_mode_generational(0, 0);
@@ -98,10 +130,20 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
 
   this->lua.safe_script("trace('Finished initializing LuaLoader.')");
 
-  this->lua.new_usertype<Engine>("Engine", sol::no_constructor, "scene",
-                                 &Engine::scene, "s", &Engine::scene,
-                                 "SetScene", &Engine::SetScene, "luaLoader",
-                                 &Engine::luaLoader);
+  this->lua.new_usertype<Engine>(
+      "Engine", sol::no_constructor, "scene", &Engine::scene, "s",
+      &Engine::scene, "SetScene", &Engine::SetScene, "luaLoader",
+      &Engine::luaLoader, "framebuffer", &Engine::framebuffer, "renderer",
+      &Engine::renderer);
+
+  this->lua.new_usertype<Framebuffer>(
+      "Framebuffer", sol::no_constructor, "Bind", &Framebuffer::Bind, "Resize",
+      &Framebuffer::Resize, "Unbind", &Framebuffer::Unbind, "texture",
+      &Framebuffer::texture);
+
+  this->lua.new_usertype<Renderer>(
+      "Renderer", sol::no_constructor, "manualResize", &Renderer::manualResize,
+      "width", &Renderer::width, "height", &Renderer::height);
 
   this->lua.new_usertype<LuaLoader>(
       "LuaLoader", sol::no_constructor, "ReloadDirectories",
@@ -148,7 +190,7 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
 
   lua.new_usertype<glm::vec2>(
       "vec2", sol::constructors<glm::vec2(), glm::vec2(float, float)>(), "x",
-      &glm::vec2::x, "y", &glm::vec2::y,
+      &glm::vec2::x, "y", &glm::vec2::y, "w", &glm::vec2::x, "h", &glm::vec2::y,
 
       sol::meta_function::addition,
       sol::overload(
@@ -240,7 +282,8 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   // glm::vec3
   lua.new_usertype<glm::vec3>(
       "vec3", sol::constructors<glm::vec3(), glm::vec3(float, float, float)>(),
-      "x", &glm::vec3::x, "y", &glm::vec3::y, "z", &glm::vec3::z,
+      "x", &glm::vec3::x, "y", &glm::vec3::y, "z", &glm::vec3::z, "w",
+      &glm::vec3::x, "h", &glm::vec3::y, "d", &glm::vec3::z,
 
       // Operators
       // +, -, *, /, ==, <, >, <=, >= are our targets
@@ -394,8 +437,20 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   lua.set("MMB", GLFW_MOUSE_BUTTON_MIDDLE);
 
   auto utilsTable = this->lua.create_named_table("utils");
-  static bool vsync = true; // VSync is enabled by default
 
+  utilsTable.set_function(
+      "clearColor",
+      [&](float r, float g, float b, float a) { glClearColor(r, g, b, a); });
+
+  utilsTable.set_function("clear", [&]() { glClear(GL_COLOR_BUFFER_BIT); });
+
+  utilsTable.set_function("getWindowSize", [&]() {
+    int w, h;
+    glfwGetWindowSize(glfwGetCurrentContext(), &w, &h);
+    return glm::vec2(w, h);
+  });
+
+  static bool vsync = true; // VSync is enabled by default
   utilsTable.set_function("SetVSync", [&](bool enabled) {
     glfwSwapInterval(enabled ? 1 : 0);
     vsync = enabled;
@@ -421,6 +476,12 @@ void LuaLoader::OneShot(const std::string &script) {
 }
 
 void LuaLoader::LoadScript(const std::string &script) {
+  // Clear out, preDraw, ready, update, draw, postDraw, etc.
+  // which can potentially be left over from a previous script.
+  for (auto &ident : {"preDraw", "ready", "update", "draw", "postDraw"}) {
+    this->lua.set(ident, sol::nil);
+  }
+
   auto res = this->lua.safe_script_file(script, sol::script_pass_on_error);
   if (!res.valid()) {
     sol::error err = res;
@@ -430,13 +491,25 @@ void LuaLoader::LoadScript(const std::string &script) {
 
   LoadedScript loadedScript;
 
+  /*loadedScript.priority = lua["PRIORITY"].get_or(0);*/
+  /*loadedScript.preDraw = lua["preDraw"].get_or(sol::nil);*/
+  /*loadedScript.ready = lua["ready"].get_or(sol::nil);*/
+  /*loadedScript.update = lua["update"].get_or(sol::nil);*/
+  /*loadedScript.draw = lua["draw"].get_or(sol::nil);*/
+  /*loadedScript.postDraw = lua["postDraw"].get_or(sol::nil);*/
+
+  sol::optional<sol::function> preDraw = this->lua["preDraw"];
   sol::optional<sol::function> ready = this->lua["ready"];
   sol::optional<sol::function> update = this->lua["update"];
   sol::optional<sol::function> draw = this->lua["draw"];
+  sol::optional<sol::function> postDraw = this->lua["postDraw"];
 
+  loadedScript.priority = this->lua["PRIORITY"].get_or(0);
+  loadedScript.preDraw = preDraw.has_value() ? preDraw.value() : sol::nil;
   loadedScript.ready = ready.has_value() ? ready.value() : sol::nil;
   loadedScript.update = update.has_value() ? update.value() : sol::nil;
   loadedScript.draw = draw.has_value() ? draw.value() : sol::nil;
+  loadedScript.postDraw = postDraw.has_value() ? postDraw.value() : sol::nil;
 
   this->scripts.emplace_back(loadedScript);
 }
@@ -458,6 +531,12 @@ void LuaLoader::LoadDirectory(const std::string &directory, bool saveToList) {
   } catch (std::filesystem::filesystem_error &e) {
     spdlog::error("LuaLoader::LoadDirectory(): {}", e.what());
   }
+
+  // Sort the scripts by priority. (Low to high)
+  std::sort(this->scripts.begin(), this->scripts.end(),
+            [](const LoadedScript &lhs, const LoadedScript &rhs) {
+              return lhs.priority < rhs.priority;
+            });
 }
 
 void LuaLoader::Ready() {
@@ -511,6 +590,28 @@ void LuaLoader::Update() {
   }
 }
 
+void LuaLoader::PreDraw() {
+  ImGuiErrorRecoveryState state;
+  ImGui::ErrorRecoveryStoreState(&state);
+
+  try {
+    for (auto &script : this->scripts) {
+      if (script.enabled && script.preDraw != sol::nil) {
+        sol::safe_function_result res = script.preDraw();
+        if (!res.valid()) {
+          sol::error err = res;
+          spdlog::error("LuaLoader::PreDraw(): {}", err.what());
+        }
+      }
+    }
+  } catch (...) {
+    spdlog::error("LuaLoader::PreDraw(): An error occurred, attempting to "
+                  "recover ImGui state.");
+
+    ImGui::ErrorRecoveryTryToRecoverState(&state);
+  }
+}
+
 void LuaLoader::Draw() {
   ImGuiErrorRecoveryState state;
   ImGui::ErrorRecoveryStoreState(&state);
@@ -528,6 +629,28 @@ void LuaLoader::Draw() {
   } catch (...) {
     spdlog::error("LuaLoader::Draw(): An error occurred, attempting to recover "
                   "ImGui state.");
+
+    ImGui::ErrorRecoveryTryToRecoverState(&state);
+  }
+}
+
+void LuaLoader::PostDraw() {
+  ImGuiErrorRecoveryState state;
+  ImGui::ErrorRecoveryStoreState(&state);
+
+  try {
+    for (auto &script : this->scripts) {
+      if (script.enabled && script.postDraw != sol::nil) {
+        sol::safe_function_result res = script.postDraw();
+        if (!res.valid()) {
+          sol::error err = res;
+          spdlog::error("LuaLoader::PostDraw(): {}", err.what());
+        }
+      }
+    }
+  } catch (...) {
+    spdlog::error("LuaLoader::PostDraw(): An error occurred, attempting to "
+                  "recover ImGui state.");
 
     ImGui::ErrorRecoveryTryToRecoverState(&state);
   }

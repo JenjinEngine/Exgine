@@ -15,8 +15,10 @@ public:
   Renderer();
 
   void Render(std::shared_ptr<Scene> scene);
-
   void Cleanup();
+
+  bool manualResize = false;
+  int width, height = 400;
 
 private:
   GLuint vao, vbo, ebo;

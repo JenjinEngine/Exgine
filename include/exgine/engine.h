@@ -3,6 +3,7 @@
 #define SOL_ALL_SAFETIES_ON 1
 #define GLFW_INCLUDE_NONE
 
+#include "exgine/framebuffer.h"
 #include "exgine/lualoader.h"
 #include "exgine/renderer.h"
 #include "exgine/scene.h"
@@ -32,6 +33,11 @@ public:
   // Set the scene to be rendered by the engine.
   void SetScene(std::shared_ptr<Scene> scene, bool firstTime = false);
 
+  // General purpose, not always used by the engine itself but often
+  // accessible via the Lua API.
+  Exgine::Framebuffer framebuffer;
+  Exgine::Renderer renderer;
+
   // Self-referential classes with API. (needs refs to engine);
   Exgine::LuaLoader *luaLoader;
 
@@ -40,7 +46,5 @@ public:
 private:
   // OpenGL context.
   GLFWwindow *window;
-
-  Exgine::Renderer renderer;
 };
 } // namespace Exgine

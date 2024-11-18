@@ -68,13 +68,18 @@ Renderer::Renderer() {
 }
 
 void Renderer::Render(std::shared_ptr<Scene> scene) {
+  spdlog::info("Width: {}, Height: {}", width, height);
+  glViewport(0, 0, width, height);
+  camera->Resize(width, height);
+
   this->shader.Use();
   this->camera->Use();
   this->camera->Update();
 
-  static int w, h;
-  glfwGetFramebufferSize(glfwGetCurrentContext(), &w, &h);
-  camera->Resize(w, h);
+  if (!this->manualResize) {
+    spdlog::info("Resizing to {}x{}", width, height);
+    glfwGetFramebufferSize(glfwGetCurrentContext(), &width, &height);
+  }
 
   // Render the scene
   for (auto &[name, gameObject] : scene->gameObjects) {

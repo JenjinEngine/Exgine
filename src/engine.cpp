@@ -25,10 +25,11 @@ Engine::Engine(GLFWwindow *window) : window(window) {
   });
 
   // Register the window resize callback.
-  glfwSetFramebufferSizeCallback(this->window,
-                                 [](GLFWwindow *window, int width, int height) {
-                                   glViewport(0, 0, width, height);
-                                 });
+  /*glfwSetFramebufferSizeCallback(this->window,*/
+  /*                               [](GLFWwindow *window, int width, int height)
+   * {*/
+  /*                                 glViewport(0, 0, width, height);*/
+  /*                               });*/
 
   // Self-referential classes.
   luaLoader = new LuaLoader(this);
@@ -40,7 +41,12 @@ void Engine::Draw() {
     return;
   }
 
+  // preDraw -> draw -> postDraw
+
+  this->luaLoader->PreDraw();
   this->renderer.Render(scene);
+  this->luaLoader->Draw();
+  this->luaLoader->PostDraw();
 }
 
 void Engine::Cleanup() {

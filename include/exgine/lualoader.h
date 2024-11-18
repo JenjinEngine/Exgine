@@ -10,10 +10,13 @@
 namespace Exgine {
 struct LoadedScript {
   bool enabled = true;
+  int priority = 0;
 
+  sol::safe_function preDraw = sol::nil;
   sol::safe_function ready = sol::nil;
   sol::safe_function update = sol::nil;
   sol::safe_function draw = sol::nil;
+  sol::safe_function postDraw = sol::nil;
 };
 
 class Engine;
@@ -41,8 +44,14 @@ public:
   // Runs the update function on every enabled lua script.
   void Update();
 
+  // Runs the preDraw function on every enabled lua script.
+  void PreDraw();
+
   // Runs the draw function on every enabled lua script.
   void Draw();
+
+  // Runs the postDraw function on every enabled lua script.
+  void PostDraw();
 
   // Returns a reference to the lua state. (sol state, but raw can be obtained
   // through this)
