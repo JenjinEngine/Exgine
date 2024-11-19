@@ -1,5 +1,6 @@
 #pragma once
 
+#include "exgine/datastore.h"
 #define SOL_ALL_SAFETIES_ON 1
 #define GLFW_INCLUDE_NONE
 
@@ -20,6 +21,8 @@ public:
 
   bool hasTexture = false;
   GLuint textureHandle = 0;
+
+  DataStore datastore;
 
   glm::vec3 colour = glm::vec3(1.0f);
 

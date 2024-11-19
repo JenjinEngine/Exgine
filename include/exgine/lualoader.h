@@ -3,6 +3,7 @@
 #define SOL_ALL_SAFETIES_ON 1
 #define GLFW_INCLUDE_NONE
 
+#include "exgine/datastore.h"
 #include "exgine/engine.h"
 
 #include <sol/sol.hpp>
@@ -68,6 +69,8 @@ private:
 
   std::vector<LoadedScript> scripts;
   std::vector<std::string> loadedDirectories;
+
+  DataStore datastore;
 
   Exgine::Engine *engine;
 };

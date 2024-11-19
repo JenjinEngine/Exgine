@@ -6,14 +6,9 @@ end
 
 function draw()
 	ImGui.Begin("Viewport")
+	globals.viewportSize = ImGui.ContentRegion()
 
-	local windowSize = ImGui.ContentRegion()
-
-	engine.renderer.width = math.floor(windowSize.x)
-	engine.renderer.height = math.floor(windowSize.y)
-	engine.framebuffer:Resize(engine.renderer.width, engine.renderer.height)
-
-	ImGui.Image(engine.framebuffer.texture, ImGui.ImVec2(windowSize.x, windowSize.y))
+	ImGui.Image(engine.framebuffer.texture, ImGui.ImVec2(globals.viewportSize.x, globals.viewportSize.y))
 
 	ImGui.End()
 end

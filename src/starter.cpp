@@ -138,39 +138,39 @@ int main(int argc, char *argv[]) {
 
     ImGui::SetNextWindowPos(ImVec2(32, 32));
 
-    ImGui::Begin("Stats", nullptr,
-                 ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
-                     ImGuiWindowFlags_NoCollapse);
-
-    if (ImGui::BeginTable("##statstab", 2)) {
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-      ImGui::Text("FPS");
-      ImGui::TableNextColumn();
-      ImGui::Text("%f", ImGui::GetIO().Framerate);
-
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-      ImGui::Text("FPS AVG");
-      ImGui::TableNextColumn();
-      ImGui::Text("%f", 1.0f / dt_avg);
-
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-      ImGui::Text("DT (µs)");
-      ImGui::TableNextColumn();
-      ImGui::Text("%f", ImGui::GetIO().DeltaTime * 1000000);
-
-      ImGui::TableNextRow();
-      ImGui::TableNextColumn();
-      ImGui::Text("DT AVG (µs)");
-      ImGui::TableNextColumn();
-      ImGui::Text("%f", dt_avg * 1000000);
-
-      ImGui::EndTable();
-    }
-
-    ImGui::End();
+    /*ImGui::Begin("Stats", nullptr,*/
+    /*             ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |*/
+    /*                 ImGuiWindowFlags_NoCollapse);*/
+    /**/
+    /*if (ImGui::BeginTable("##statstab", 2)) {*/
+    /*  ImGui::TableNextRow();*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("FPS");*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("%f", ImGui::GetIO().Framerate);*/
+    /**/
+    /*  ImGui::TableNextRow();*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("FPS AVG");*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("%f", 1.0f / dt_avg);*/
+    /**/
+    /*  ImGui::TableNextRow();*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("DT (µs)");*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("%f", ImGui::GetIO().DeltaTime * 1000000);*/
+    /**/
+    /*  ImGui::TableNextRow();*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("DT AVG (µs)");*/
+    /*  ImGui::TableNextColumn();*/
+    /*  ImGui::Text("%f", dt_avg * 1000000);*/
+    /**/
+    /*  ImGui::EndTable();*/
+    /*}*/
+    /**/
+    /*ImGui::End();*/
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -29,16 +29,60 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
                            sol::lib::math);
 
   sol_ImGui::Init(this->lua);
-
   auto igt = this->lua["ImGui"];
+
+  lua.new_enum("ImGuiDockNodeFlags", ENUM_HELPER(ImGuiDockNodeFlags, None),
+               ENUM_HELPER(ImGuiDockNodeFlags, KeepAliveOnly),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoDockingOverCentralNode),
+               ENUM_HELPER(ImGuiDockNodeFlags, PassthruCentralNode),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoDockingSplit),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoResize),
+               ENUM_HELPER(ImGuiDockNodeFlags, AutoHideTabBar),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoUndocking),
+               ENUM_HELPER(ImGuiDockNodeFlags, CentralNode),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoSplit),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoTabBar),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoCloseButton),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoDocking),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoDockingOverMe),
+               ENUM_HELPER(ImGuiDockNodeFlags, NoDockingOverOther),
+               ENUM_HELPER(ImGuiDockNodeFlags, PassthruCentralNode),
+               ENUM_HELPER(ImGuiDockNodeFlags, DockSpace));
+
+  /*ImGui::DockBuilderSplitNode(ImGuiID node_id, ImGuiDir split_dir, float
+   * size_ratio_for_node_at_dir, ImGuiID *out_id_at_dir, ImGuiID
+   * *out_id_at_opposite_dir)*/
+  auto dockBuilderSplitNode = [](ImGuiID node_id, ImGuiDir split_dir,
+                                 float size_ratio_for_node_at_dir) {
+    ImGuiID out_id_at_dir{}, out_id_at_opposite_dir{};
+    ImGui::DockBuilderSplitNode(node_id, split_dir, size_ratio_for_node_at_dir,
+                                &out_id_at_dir, &out_id_at_opposite_dir);
+    return std::make_tuple(out_id_at_dir, out_id_at_opposite_dir);
+  };
+  igt["DockBuilderSplitNode"] = dockBuilderSplitNode;
+
+  igt["PushStyleVar"] = sol::overload(
+      [](int index, float valX) { sol_ImGui::PushStyleVar(index, valX); },
+      [](int index, float valX, float valY) {
+        sol_ImGui::PushStyleVar(index, valX, valY);
+      });
+
+  igt["PopStyleVar"] =
+      sol::overload([](int count) { sol_ImGui::PopStyleVar(count); },
+                    []() { sol_ImGui::PopStyleVar(); });
 
   igt["ShowDemoWindow"] = &ImGui::ShowDemoWindow;
 
   igt["GetMainViewport"] = &ImGui::GetMainViewport;
+
+  lua.new_usertype<ImGuiViewport>(
+      "ImGuiViewport", sol::no_constructor, "Pos", &ImGuiViewport::Pos, "Size",
+      &ImGuiViewport::Size, "ID", &ImGuiViewport::ID);
+
   igt["SetNextWindowViewport"] = &ImGui::SetNextWindowViewport;
   igt["DockBuilderRemoveNode"] = &ImGui::DockBuilderRemoveNode;
   igt["DockBuilderAddNode"] = &ImGui::DockBuilderAddNode;
-  igt["DockBuilderSplitNode"] = &ImGui::DockBuilderSplitNode;
+  /*igt["DockBuilderSplitNode"] = &ImGui::DockBuilderSplitNode;*/
   igt["DockBuilderDockWindow"] = &ImGui::DockBuilderDockWindow;
   igt["DockBuilderFinish"] = &ImGui::DockBuilderFinish;
 
@@ -73,8 +117,20 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   };
 
   igt["Image"] = [](int user_texture_id, const ImVec2 &size) {
-    ImGui::Image((ImTextureID)user_texture_id, size);
+    ImGui::Image((ImTextureID)user_texture_id, size, ImVec2(0, 1),
+                 ImVec2(1, 0));
   };
+
+  lua.new_usertype<DataStore>(
+      "DataStore", sol::no_constructor, sol::meta_function::index,
+      [](DataStore &ds, const std::string &key) { return ds.DynamicGet(key); },
+      sol::meta_function::new_index,
+      [](DataStore &ds, const std::string &key, sol::stack_object value) {
+        ds.DynamicSet(key, std::move(value));
+      },
+      sol::meta_function::length,
+      [](DataStore &ds) { return ds.entries.size(); });
+  lua.set("globals", this->datastore);
 
   // Disable GC (PERF: Fix this later)
   this->lua.change_gc_mode_generational(0, 0);
@@ -182,7 +238,16 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
       "Translate", &GameObject::Translate, "Scale", &GameObject::Scale,
       "Rotate", &GameObject::Rotate, "GetPosition", &GameObject::GetPosition,
       "GetScale", &GameObject::GetScale, "GetRotation",
-      &GameObject::GetRotation, "GetColour", &GameObject::GetColour);
+      &GameObject::GetRotation, "GetColour", &GameObject::GetColour, "data",
+      &GameObject::datastore, sol::meta_function::index,
+      [](GameObject &gobj, const std::string &key) {
+        return gobj.datastore.DynamicGet(key);
+      },
+
+      sol::meta_function::new_index,
+      [](GameObject &gobj, const std::string &key, sol::stack_object value) {
+        gobj.datastore.DynamicSet(key, std::move(value));
+      });
 
   lua.new_usertype<Scene::GameObjectPair>("GameObjectPair", sol::no_constructor,
                                           "name", &Scene::GameObjectPair::name,
@@ -439,12 +504,12 @@ LuaLoader::LuaLoader(Engine *engine) : engine(engine) {
   auto utilsTable = this->lua.create_named_table("utils");
 
   utilsTable.set_function(
-      "clearColor",
+      "ClearColor",
       [&](float r, float g, float b, float a) { glClearColor(r, g, b, a); });
 
-  utilsTable.set_function("clear", [&]() { glClear(GL_COLOR_BUFFER_BIT); });
+  utilsTable.set_function("Clear", [&]() { glClear(GL_COLOR_BUFFER_BIT); });
 
-  utilsTable.set_function("getWindowSize", [&]() {
+  utilsTable.set_function("GetWindowSize", [&]() {
     int w, h;
     glfwGetWindowSize(glfwGetCurrentContext(), &w, &h);
     return glm::vec2(w, h);
