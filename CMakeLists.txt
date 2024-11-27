@@ -13,7 +13,10 @@ set (CMAKE_CXX_STANDARD_REQUIRED ON)
 # Project declaration
 project(ExgineRoot)
 
-if (WIN32)
+# we need to check if we're actually on windows, not just cross-compiling
+if (WIN32 AND NOT CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+	message(STATUS "Not on Windows, not enabling unicode support")
+elseif (WIN32)
 	message(STATUS "Manually enabling unicode support")
     add_compile_options(/utf-8)
 endif()
